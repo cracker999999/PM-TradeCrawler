@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Polymarket 交易记录下载工具 - 轻松导出任意用户的交易历史">
+    <title>Polymarket 交易记录爬取</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="theme-toggle-container">
+        <button id="themeToggle" class="theme-btn" title="切换主题">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h1>Polymarket <span class="highlight">交易记录爬取</span></h1>
+            </div>
+            <p class="subtitle">一键导出任意用户的完整交易历史</p>
+        </header>
+
+        <main class="main-content">
+            <div class="top-row">
+                <div class="card input-card">
+                    <div class="input-group">
+                        <label for="userInput">
+                            <span class="label-icon">👤</span>
+                            目标用户 (钱包地址/用户链接)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="userInput" 
+                            placeholder="例如: 0x80cd... 或 https://polymarket.com/profile/0x80cd..."
+                            autocomplete="off"
+                        >
+                        <span class="input-hint">支持直接输入钱包地址或复制用户主页链接</span>
+                    </div>
+
+                    <div class="action-row">
+                        <div class="input-group shrink">
+                            <label for="limitInput">
+                                <span class="label-icon">📊</span>
+                                抓取最大条数
+                            </label>
+                            <input 
+                                type="number" 
+                                id="limitInput" 
+                                value="100" 
+                                min="1" 
+                                max="10000"
+                            >
+                        </div>
+
+                        <button id="fetchBtn" class="btn-primary">
+                            <span class="btn-icon">🚀</span>
+                            <span class="btn-text">开始自动解析下载</span>
+                            <span class="btn-loading" style="display: none;">
+                                <span class="spinner"></span>
+                                抓取中...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card log-card">
+                    <div class="log-header">
+                        <h3>
+                            <span class="log-icon">📋</span>
+                            运行日志
+                        </h3>
+                        <button id="clearLogBtn" class="btn-ghost">清空</button>
+                    </div>
+                    <div id="logArea" class="log-area">
+                        <div class="log-entry log-info">
+                            <span class="log-time">[--:--:--]</span>
+                            <span class="log-message">等待开始...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card result-card" id="resultCard" style="display: none;">
+                <div class="result-header">
+                    <h3>
+                        <span class="result-icon">✅</span>
+                        抓取完成
+                    </h3>
+                    <div class="result-time-range" id="timeRangeDisplay"></div>
+                    <div class="result-stats">
+                        <span class="stat">
+                            <span class="stat-value" id="totalRecords">0</span>
+                            <span class="stat-label">条记录</span>
+                        </span>
+                        <span class="stat">
+                            <span class="stat-value" id="totalVolume">$0</span>
+                            <span class="stat-label">交易额</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="download-actions">
+                    <button id="downloadCsvBtn" class="btn-download">
+                        <span class="btn-icon">📄</span>
+                        下载 CSV
+                    </button>
+                    <button id="downloadJsonBtn" class="btn-download btn-secondary">
+                        <span class="btn-icon">📦</span>
+                        下载 JSON
+                    </button>
+                </div>
+
+                <div class="preview-section">
+                    <h4>数据预览</h4>
+                    <div class="table-wrapper">
+                        <table id="previewTable">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>市场</th>
+                                    <th>方向</th>
+                                    <th>结果</th>
+                                    <th>数量</th>
+                                    <th>价格</th>
+                                    <th>金额(USDC)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by Polymarket Data API · 仅供学习研究使用</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
