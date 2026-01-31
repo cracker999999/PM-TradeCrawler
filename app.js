@@ -250,11 +250,12 @@ class PolymarketCrawler {
             const time = new Date(record.timestamp * 1000).toLocaleString('zh-CN');
             const title = record.title || '-';
             const shortTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
-            const eventUrl = record.eventSlug ? `https://polymarket.com/event/${record.eventSlug}` : '#';
+            const eventUrl = record.slug ? `https://polymarket.com/event/${record.slug}` : '#';
             
             row.innerHTML = `
                 <td>${time}</td>
                 <td class="market-cell" title="${title}"><a href="${eventUrl}" target="_blank" rel="noopener">${shortTitle}</a></td>
+                <td>${record.type || '-'}</td>
                 <td class="side-${record.side?.toLowerCase()}">${record.side || '-'}</td>
                 <td class="outcome-${record.outcome?.toLowerCase()}">${record.outcome || '-'}</td>
                 <td>${record.size?.toFixed(2) || '-'}</td>
@@ -268,7 +269,7 @@ class PolymarketCrawler {
             const row = document.createElement('tr');
             const remaining = this.allRecords.length - this.previewLimit;
             row.innerHTML = `
-                <td colspan="7" style="text-align: center; padding: var(--spacing-md);">
+                <td colspan="8" style="text-align: center; padding: var(--spacing-md);">
                     <button class="btn-ghost load-more-btn" style="width: 200px;">
                         加载更多 (还有 ${remaining} 条)
                     </button>
@@ -324,7 +325,7 @@ class PolymarketCrawler {
         if (this.allRecords.length === 0) return;
         
         // 过滤掉不需要的字段
-        const fieldsToRemove = ['proxyWallet', 'icon', 'name', 'pseudonym', 'bio', 'profileImage', 'profileImageOptimized'];
+        const fieldsToRemove = ['transactionHash', 'eventSlug', 'proxyWallet', 'icon', 'name', 'pseudonym', 'bio', 'profileImage', 'profileImageOptimized'];
         const cleanedRecords = this.allRecords.map(record => {
             const cleaned = { ...record };
             fieldsToRemove.forEach(field => delete cleaned[field]);
