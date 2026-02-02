@@ -457,6 +457,14 @@ body {
     border-color: var(--primary);
 }
 
+.btn-download.btn-tertiary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+}
+
+.btn-download.btn-tertiary:hover {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+
 /* ========================================
    Theme Toggle
    ======================================== */

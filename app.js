@@ -51,6 +51,7 @@ class PolymarketCrawler {
         this.previewBody = document.getElementById('previewBody');
         this.downloadCsvBtn = document.getElementById('downloadCsvBtn');
         this.downloadJsonBtn = document.getElementById('downloadJsonBtn');
+        this.downloadMdBtn = document.getElementById('downloadMdBtn');
         this.themeToggle = document.getElementById('themeToggle');
     }
     
@@ -59,6 +60,7 @@ class PolymarketCrawler {
         this.clearLogBtn.addEventListener('click', () => this.clearLog());
         this.downloadCsvBtn.addEventListener('click', () => this.downloadCSV());
         this.downloadJsonBtn.addEventListener('click', () => this.downloadJSON());
+        this.downloadMdBtn.addEventListener('click', () => this.downloadMarkdown());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         
         // 回车键触发
@@ -335,6 +337,77 @@ class PolymarketCrawler {
         const filename = `pm_${this.currentAddress}_${this.allRecords.length}.json`;
         this.downloadFile(json, filename, 'application/json');
         this.log('JSON文件下载成功', 'success');
+    }
+    
+    /**
+     * 下载Markdown表格
+     */
+    downloadMarkdown() {
+        if (this.allRecords.length === 0) return;
+        
+        // 计算摘要信息
+        const totalRecords = this.allRecords.length;
+        
+        // 计算时间范围
+        const timestamps = this.allRecords.map(r => r.timestamp).filter(t => t);
+        const minTime = Math.min(...timestamps);
+        const maxTime = Math.max(...timestamps);
+        const startDate = new Date(minTime * 1000).toLocaleString('zh-CN');
+        const endDate = new Date(maxTime * 1000).toLocaleString('zh-CN');
+        const durationHours = ((maxTime - minTime) / 3600).toFixed(1);
+        
+        // 统计交易类型
+        const typeCounts = {};
+        this.allRecords.forEach(r => {
+            const type = r.type || 'UNKNOWN';
+            typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+        const typeStats = Object.entries(typeCounts)
+            .map(([type, count]) => `${type}(${count})`)
+            .join(' / ');
+        
+        // 生成摘要
+        const summary = [
+            '# 交易数据摘要',
+            '',
+            `- 总记录数: ${totalRecords}`,
+            `- 时间范围: ${startDate} ~ ${endDate} (${durationHours}小时)`,
+            `- 交易类型: ${typeStats}`,
+            '',
+            '---',
+            ''
+        ].join('\n');
+        
+        // 定义表头
+        const headers = ['timestamp', 'type', 'title', 'side', 'outcome', 'size', 'price', 'usdcSize'];
+        
+        // 生成表头行
+        const headerRow = '| ' + headers.join(' | ') + ' |';
+        
+        // 生成分隔行
+        const separatorRow = '| ' + headers.map(() => '---').join(' | ') + ' |';
+        
+        // 生成数据行
+        const dataRows = this.allRecords.map(r => {
+            const values = [
+                r.timestamp,
+                r.type || '',
+                (r.title || '').replace(/\|/g, '\\|'),  // 转义管道符
+                r.side || '',
+                r.outcome || '',
+                r.size || '',
+                r.price || '',
+                r.usdcSize || ''
+            ];
+            return '| ' + values.join(' | ') + ' |';
+        });
+        
+        // 组合成完整的Markdown（摘要 + 表格）
+        const markdown = summary + [headerRow, separatorRow, ...dataRows].join('\n');
+        
+        const filename = `pm_${this.currentAddress}_${this.allRecords.length}.md`;
+        this.downloadFile(markdown, filename, 'text/markdown');
+        this.log('Markdown文件下载成功', 'success');
     }
     
     /**
