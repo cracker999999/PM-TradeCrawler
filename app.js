@@ -293,7 +293,7 @@ class PolymarketCrawler {
         
         const headers = [
             'timestamp', 'datetime', 'type', 'title', 'slug', 'side', 'outcome',
-            'size', 'price', 'usdcSize', 'transactionHash', 'conditionId'
+            'size', 'price', 'usdcSize', 'conditionId'
         ];
         
         const rows = this.allRecords.map(r => [
@@ -307,7 +307,6 @@ class PolymarketCrawler {
             r.size,
             r.price,
             r.usdcSize,
-            r.transactionHash,
             r.conditionId
         ]);
         
@@ -325,7 +324,7 @@ class PolymarketCrawler {
         if (this.allRecords.length === 0) return;
         
         // 过滤掉不需要的字段
-        const fieldsToRemove = ['transactionHash', 'eventSlug', 'proxyWallet', 'icon', 'name', 'pseudonym', 'bio', 'profileImage', 'profileImageOptimized'];
+        const fieldsToRemove = ['asset', 'transactionHash', 'eventSlug', 'proxyWallet', 'icon', 'name', 'pseudonym', 'bio', 'profileImage', 'profileImageOptimized'];
         const cleanedRecords = this.allRecords.map(record => {
             const cleaned = { ...record };
             fieldsToRemove.forEach(field => delete cleaned[field]);
