@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div class="background-effects">
@@ -105,6 +106,57 @@
                             <span class="log-time">[--:--:--]</span>
                             <span class="log-message">等待开始...</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card pnl-card" id="pnlCard">
+                <div class="pnl-header">
+                    <h3>
+                        <span class="pnl-icon">📈</span>
+                        收益曲线 (PnL)
+                    </h3>
+                    <div class="pnl-actions">
+                        <select id="pnlInterval" class="pnl-select">
+                            <option value="all" selected>全部</option>
+                            <option value="1m">1个月</option>
+                            <option value="1w">1周</option>
+                            <option value="1d">1天</option>
+                        </select>
+                        <select id="pnlFidelity" class="pnl-select">
+                            <option value="1h">1小时</option>
+                            <option value="6h">6小时</option>
+                            <option value="12h" selected>12小时</option>
+                            <option value="1d">1天</option>
+                        </select>
+                        <button id="pnlBtn" class="btn-pnl">
+                            <span class="btn-text">生成曲线</span>
+                            <span class="btn-loading" style="display: none;">
+                                <span class="spinner"></span>
+                                加载中...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <div id="pnlChartContainer" class="pnl-chart-container">
+                    <div class="pnl-placeholder">输入钱包地址后点击「生成曲线」查看收益走势</div>
+                </div>
+                <div id="pnlStats" class="pnl-stats" style="display: none;">
+                    <div class="pnl-stat">
+                        <span class="pnl-stat-label">当前收益</span>
+                        <span class="pnl-stat-value" id="pnlCurrent">--</span>
+                    </div>
+                    <div class="pnl-stat">
+                        <span class="pnl-stat-label">最高收益</span>
+                        <span class="pnl-stat-value" id="pnlHigh">--</span>
+                    </div>
+                    <div class="pnl-stat">
+                        <span class="pnl-stat-label">最低收益</span>
+                        <span class="pnl-stat-value" id="pnlLow">--</span>
+                    </div>
+                    <div class="pnl-stat">
+                        <span class="pnl-stat-label">数据点</span>
+                        <span class="pnl-stat-value" id="pnlPoints">--</span>
                     </div>
                 </div>
             </div>

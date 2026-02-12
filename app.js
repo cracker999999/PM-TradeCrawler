@@ -53,6 +53,23 @@ class PolymarketCrawler {
         this.downloadJsonBtn = document.getElementById('downloadJsonBtn');
         this.downloadMdBtn = document.getElementById('downloadMdBtn');
         this.themeToggle = document.getElementById('themeToggle');
+
+        // PnL chart elements
+        this.pnlBtn = document.getElementById('pnlBtn');
+        this.pnlBtnText = this.pnlBtn.querySelector('.btn-text');
+        this.pnlBtnLoading = this.pnlBtn.querySelector('.btn-loading');
+        this.pnlInterval = document.getElementById('pnlInterval');
+        this.pnlFidelity = document.getElementById('pnlFidelity');
+        this.pnlChartContainer = document.getElementById('pnlChartContainer');
+        this.pnlStatsEl = document.getElementById('pnlStats');
+        this.pnlCurrentEl = document.getElementById('pnlCurrent');
+        this.pnlHighEl = document.getElementById('pnlHigh');
+        this.pnlLowEl = document.getElementById('pnlLow');
+        this.pnlPointsEl = document.getElementById('pnlPoints');
+
+        this.pnlChart = null;
+        this.pnlSeries = null;
+        this.pnlIsLoading = false;
     }
     
     bindEvents() {
@@ -62,6 +79,7 @@ class PolymarketCrawler {
         this.downloadJsonBtn.addEventListener('click', () => this.downloadJSON());
         this.downloadMdBtn.addEventListener('click', () => this.downloadMarkdown());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        this.pnlBtn.addEventListener('click', () => this.renderPnlChart());
         
         // 回车键触发
         this.userInput.addEventListener('keypress', (e) => {
@@ -425,6 +443,176 @@ class PolymarketCrawler {
         URL.revokeObjectURL(url);
     }
     
+    /**
+     * 渲染PnL收益曲线
+     */
+    async renderPnlChart() {
+        if (this.pnlIsLoading) return;
+
+        const userInput = this.userInput.value;
+        if (!userInput) {
+            this.log('请先输入钱包地址', 'error');
+            return;
+        }
+
+        const walletAddress = this.extractWalletAddress(userInput);
+        if (!walletAddress) {
+            this.log('无法识别钱包地址，请检查输入格式', 'error');
+            return;
+        }
+
+        const interval = this.pnlInterval.value;
+        const fidelity = this.pnlFidelity.value;
+
+        // 设置加载状态
+        this.pnlIsLoading = true;
+        this.pnlBtn.disabled = true;
+        this.pnlBtnText.style.display = 'none';
+        this.pnlBtnLoading.style.display = 'flex';
+
+        this.log(`正在获取 ${walletAddress} 的收益曲线数据...`, 'fetch');
+
+        try {
+            const url = `https://user-pnl-api.polymarket.com/user-pnl?user_address=${walletAddress}&interval=${interval}&fidelity=${fidelity}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`PnL API 请求失败: ${response.status}`);
+            }
+
+            const rawData = await response.json();
+
+            if (!Array.isArray(rawData) || rawData.length === 0) {
+                this.log('未找到该用户的收益数据', 'warning');
+                return;
+            }
+
+            // 转换数据格式：t -> time, p -> value
+            const formattedData = rawData.map(item => ({
+                time: item.t,
+                value: item.p
+            })).sort((a, b) => a.time - b.time);
+
+            // 获取当前主题的背景色
+            const computedStyle = getComputedStyle(document.documentElement);
+            const bgColor = computedStyle.getPropertyValue('--bg-card').trim() || '#1a1a24';
+            const textColor = computedStyle.getPropertyValue('--text-secondary').trim() || '#a1a1aa';
+            const gridColor = computedStyle.getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.08)';
+
+            // 清空容器并移除 placeholder
+            this.pnlChartContainer.innerHTML = '';
+
+            // 创建或重建图表
+            this.pnlChart = LightweightCharts.createChart(this.pnlChartContainer, {
+                layout: {
+                    background: { color: bgColor },
+                    textColor: textColor,
+                },
+                grid: {
+                    vertLines: { visible: false },
+                    horzLines: { color: gridColor },
+                },
+                timeScale: {
+                    borderColor: gridColor,
+                    timeVisible: true,
+                },
+                rightPriceScale: {
+                    borderColor: gridColor,
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                handleScale: true,
+                handleScroll: true,
+            });
+
+            // 根据最终收益正负决定颜色
+            const lastValue = formattedData[formattedData.length - 1].value;
+            const isPositive = lastValue >= 0;
+            const lineColor = isPositive ? '#22c55e' : '#ef4444';
+            const topColor = isPositive ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+            const bottomColor = isPositive ? 'rgba(34, 197, 94, 0)' : 'rgba(239, 68, 68, 0)';
+
+            this.pnlSeries = this.pnlChart.addSeries(LightweightCharts.AreaSeries, {
+                lineColor: lineColor,
+                topColor: topColor,
+                bottomColor: bottomColor,
+                lineWidth: 2,
+                lineType: 2,
+            });
+
+            this.pnlSeries.setData(formattedData);
+            this.pnlChart.timeScale().fitContent();
+
+            // 创建图表左上角的 legend 浮层
+            const legendEl = document.createElement('div');
+            legendEl.className = 'pnl-legend';
+            this.pnlChartContainer.appendChild(legendEl);
+
+            const lastDataPoint = formattedData[formattedData.length - 1];
+            const updateLegend = (value, time) => {
+                const sign = value >= 0 ? '+' : '';
+                const colorClass = value >= 0 ? 'positive' : 'negative';
+                let timeStr = '';
+                if (time) {
+                    const date = new Date(time * 1000);
+                    timeStr = date.toLocaleString('zh-CN');
+                }
+                legendEl.innerHTML = `<span class="pnl-legend-label">PnL</span> <span class="pnl-legend-value ${colorClass}">${sign}$${value.toFixed(2)}</span>${timeStr ? `<span class="pnl-legend-time">${timeStr}</span>` : ''}`;
+            };
+
+            // 默认显示最新值
+            updateLegend(lastDataPoint.value, lastDataPoint.time);
+
+            // 订阅十字线移动事件
+            this.pnlChart.subscribeCrosshairMove((param) => {
+                if (!param || !param.time || !param.seriesData || param.seriesData.size === 0) {
+                    updateLegend(lastDataPoint.value, lastDataPoint.time);
+                    return;
+                }
+                const data = param.seriesData.get(this.pnlSeries);
+                if (data && data.value !== undefined) {
+                    updateLegend(data.value, param.time);
+                }
+            });
+
+            // 更新统计信息
+            const values = formattedData.map(d => d.value);
+            const currentPnl = values[values.length - 1];
+            const highPnl = Math.max(...values);
+            const lowPnl = Math.min(...values);
+
+            const formatUsd = (v) => {
+                const sign = v >= 0 ? '+' : '';
+                return `${sign}$${v.toFixed(2)}`;
+            };
+
+            this.pnlCurrentEl.textContent = formatUsd(currentPnl);
+            this.pnlCurrentEl.className = 'pnl-stat-value ' + (currentPnl >= 0 ? 'positive' : 'negative');
+
+            this.pnlHighEl.textContent = formatUsd(highPnl);
+            this.pnlHighEl.className = 'pnl-stat-value ' + (highPnl >= 0 ? 'positive' : 'negative');
+
+            this.pnlLowEl.textContent = formatUsd(lowPnl);
+            this.pnlLowEl.className = 'pnl-stat-value ' + (lowPnl >= 0 ? 'positive' : 'negative');
+
+            this.pnlPointsEl.textContent = formattedData.length;
+
+            this.pnlStatsEl.style.display = 'flex';
+
+            this.log(`收益曲线生成成功，共 ${formattedData.length} 个数据点，当前收益: ${formatUsd(currentPnl)}`, 'success');
+
+        } catch (err) {
+            this.log(`收益曲线获取失败: ${err.message}`, 'error');
+            console.error(err);
+        } finally {
+            this.pnlIsLoading = false;
+            this.pnlBtn.disabled = false;
+            this.pnlBtnText.style.display = 'inline';
+            this.pnlBtnLoading.style.display = 'none';
+        }
+    }
+
     /**
      * 延时
      */

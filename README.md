@@ -5,10 +5,11 @@
 ## ✨ 功能特点
 
 - 🔍 **智能解析** - 支持直接输入钱包地址或用户主页链接
+- 📈 **收益曲线** - 一键生成基于 Polymarket 官方数据的 PnL 走势图
 - 📊 **批量抓取** - 自动分页获取全部交易记录
-- 📄 **多格式导出** - 支持 CSV 和 JSON 格式下载
-- 🎨 **现代UI** - 深色主题、玻璃态效果、流畅动画
-- ⚡ **纯静态** - 无需后端，可直接部署到 Cloudflare Pages
+- 📄 **多格式导出** - 支持 CSV、JSON 和 Markdown 格式下载
+- 🎨 **现代UI** - 深色/浅色主题切换、玻璃态效果、交互式图表
+- ⚡ **纯静态** - 无需后端，支持多种时间跨度（1d/1w/1m/all）分析
 
 ## 🚀 快速开始
 
@@ -75,16 +76,17 @@ GET https://data-api.polymarket.com/activity
 | 字段 | 说明 |
 |------|------|
 | timestamp | 时间戳 |
-| type | 类型 (TRADE) |
+| type | 类型 (TRADE/REDEEDM...) |
 | title | 市场标题 |
 | side | 方向 (BUY/SELL) |
 | outcome | 结果 (Yes/No) |
 | size | 数量 |
 | price | 价格 |
 | usdcSize | USDC金额 |
-| transactionHash | 交易哈希 |
 
-## 🛠️ 外部调用接口
+---
+
+## 🛠️ 外部调用与导出说明
 
 本项目提供了一个内置的 API 路由（位于 `/functions`），支持通过 URL 直接导出清洗后的 JSON 数据：
 
