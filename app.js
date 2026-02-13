@@ -556,9 +556,9 @@ class PolymarketCrawler {
                 let timeStr = '';
                 if (time) {
                     const date = new Date(time * 1000);
-                    timeStr = date.toLocaleString('zh-CN');
+                    timeStr = date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
                 }
-                legendEl.innerHTML = `<span class="pnl-legend-label">PnL</span> <span class="pnl-legend-value ${colorClass}">${sign}$${value.toFixed(2)}</span>${timeStr ? `<span class="pnl-legend-time">${timeStr}</span>` : ''}`;
+                legendEl.innerHTML = `<span class="pnl-legend-value ${colorClass}">${sign}$${value.toFixed(2)}</span>${timeStr ? `<span class="pnl-legend-time">${timeStr}</span>` : ''}`;
             };
 
             // 默认显示最新值
